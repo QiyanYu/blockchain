@@ -31,7 +31,63 @@ func (mpt *MerklePatriciaTrie) Get(key string) (string, error) {
 	if key == "" {
 		return "", nil
 	}
-	return "", errors.New("path_not_found")
+	var path = getHexArray(key)
+	var value = mpt.getHelper(mpt.db[mpt.root], path)
+	if value == "" {
+		return "", errors.New("path_not_found")
+	} else {
+		return value, nil
+	}
+}
+
+func (mpt *MerklePatriciaTrie) getHelper(node Node, path []uint8) string {
+	var nodeType = node.node_type
+	if nodeType == 0 {
+		return ""
+	} else if nodeType == 1 {
+		if getBranchCommonPath(node.branch_value, path) {
+			if path[0] == uint8(16) {
+				return node.branch_value[16]
+			} else {
+				return mpt.getHelper(mpt.db[node.branch_value[path[0]]], path[1:])
+			}
+		} else {
+			return ""
+		}
+	} else if nodeType == 2 {
+		var encodeValue = node.flag_value.encoded_prefix
+		var nodeValue = node.flag_value.value
+		var isLeaf = encodeValue[0] == uint8(2) || encodeValue[0] == uint8(3)
+		if isLeaf {
+			var nodePath = append(compact_decode(encodeValue), uint8(16)) //since it is the leaf node, add 16 back
+			var commonPath = getExtLeafCommonPath(nodePath, path)
+			var restPath = getRestPath(path, commonPath)
+			var restNibble = getRestNibble(nodePath, commonPath)
+			var cpLen = len(commonPath)
+			var rpLen = len(restPath)
+			var rnLen = len(restNibble)
+			if cpLen != 0 && rpLen == 0 && rnLen == 0 {
+				return nodeValue
+			} else {
+				return ""
+			}
+		} else { // exstension node
+			var nodePath = compact_decode(encodeValue)
+			var commonPath = getExtLeafCommonPath(nodePath, path)
+			var restPath = getRestPath(path, commonPath)
+			var restNibble = getRestNibble(path, commonPath)
+			var cpLen = len(commonPath)
+			var rpLen = len(restPath)
+			var rnLen = len(restNibble)
+			if cpLen != 0 && rpLen == 0 && rnLen == 0 {
+				var nextNode = mpt.db[nodeValue]
+				return mpt.getHelper(nextNode, restPath)
+			} else {
+				return ""
+			}
+		}
+	}
+	return ""
 }
 
 func (mpt *MerklePatriciaTrie) Insert(key string, new_value string) {
@@ -196,7 +252,7 @@ func (mpt *MerklePatriciaTrie) insertHelper(node Node, path []uint8, value strin
 
 func getBranchCommonPath(branchValue [17]string, path []uint8) bool {
 	var n = path[0]
-	for i := 0; i < len(branchValue); i++ {
+	for i := 0; i < 17; i++ {
 		if branchValue[i] != "" {
 			if i == int(n) {
 				return true
