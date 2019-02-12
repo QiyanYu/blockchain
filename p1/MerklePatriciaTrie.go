@@ -252,14 +252,11 @@ func (mpt *MerklePatriciaTrie) insertHelper(node Node, path []uint8, value strin
 
 func getBranchCommonPath(branchValue [17]string, path []uint8) bool {
 	var n = path[0]
-	for i := 0; i < 17; i++ {
-		if branchValue[i] != "" {
-			if i == int(n) {
-				return true
-			}
-		}
+	if branchValue[n] == "" {
+		return false
+	} else {
+		return true
 	}
-	return false
 }
 
 func getExtLeafCommonPath(nodePath []uint8, insertPath []uint8) []uint8 {
