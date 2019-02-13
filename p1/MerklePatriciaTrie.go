@@ -250,6 +250,155 @@ func (mpt *MerklePatriciaTrie) insertHelper(node Node, path []uint8, value strin
 	return ""
 }
 
+func (mpt *MerklePatriciaTrie) Delete(key string) (string, error) {
+	// TODO
+	var path = getHexArray(key)
+	var isSuc bool
+	isSuc, _ = mpt.deleteHelper(mpt.db[mpt.root], path)
+	if isSuc {
+		return "", nil
+	} else {
+		return "", errors.New("path_not_found")
+	}
+}
+
+func getArrayInBranchValue(branchValue [17]string) []int {
+	var result []int
+	for i := range branchValue {
+		if branchValue[i] != "" {
+			result = append(result, i)
+		}
+	}
+	return result
+}
+
+func (mpt *MerklePatriciaTrie) deleteHelper(node Node, path []uint8) (bool, string) {
+	var nodeType = node.node_type
+	var nodeKey = node.hash_node()
+	if nodeType == 0 { // delete at Null node
+		return false, ""
+	} else if nodeType == 1 { // delete at Branch node
+		if getBranchCommonPath(node.branch_value, path) {
+			if path[0] == uint8(16) { // delete branch node value at 16
+				node.branch_value[16] = ""
+			} else { // has common path but not delete the branch value, into recursion
+				var isSuc bool
+				var nextKey string
+				isSuc, nextKey = mpt.deleteHelper(mpt.db[node.branch_value[path[0]]], path[1:])
+				if isSuc { //delete successfully
+					node.branch_value[path[0]] = nextKey
+				} else { //not found
+					return false, ""
+				}
+			}
+			//check if there is only one value in branch node remaining
+			if len(getArrayInBranchValue(node.branch_value)) > 1 { //do not need to balance
+				mpt.db[node.hash_node()] = node
+				delete(mpt.db, nodeKey)
+				return true, node.hash_node()
+			} else if getArrayInBranchValue(node.branch_value)[0] == 16 { // it is a leaf node
+				var returnNode Node
+				returnNode.node_type = 2
+				returnNode.flag_value.value = node.branch_value[16]
+				returnNode.flag_value.encoded_prefix = compact_encode([]uint8{uint8(16)})
+				mpt.db[returnNode.hash_node()] = returnNode
+				delete(mpt.db, nodeKey)
+				return true, returnNode.hash_node()
+			} else {
+				var returnNode Node
+				var branchIndex = getArrayInBranchValue(node.branch_value)[0]
+				var nextNodeKey = node.branch_value[branchIndex]
+				var nextNode = mpt.db[nextNodeKey]
+				var nextNodeType = nextNode.node_type
+				if nextNodeType == 2 { // if next node is extension or leaf node, combine them
+					returnNode.node_type = 2
+					returnNode.flag_value.value = nextNode.flag_value.value
+					var nextNodeEncodeValue = nextNode.flag_value.encoded_prefix
+					var newValue = append([]uint8{uint8(branchIndex)}, compact_decode(nextNode.flag_value.encoded_prefix)...)
+					if nextNodeEncodeValue[0] == uint8(2) || nextNodeEncodeValue[0] == uint8(3) {
+						newValue = append(newValue, uint8(16))
+					}
+					returnNode.flag_value.encoded_prefix = compact_encode(newValue)
+					mpt.db[returnNode.hash_node()] = returnNode
+					delete(mpt.db, nodeKey)
+					delete(mpt.db, nextNodeKey)
+					return true, returnNode.hash_node()
+				} else { // if next node is branch node, return it as extension node
+					returnNode.node_type = 2
+					returnNode.flag_value.value = nextNodeKey
+					returnNode.flag_value.encoded_prefix = compact_encode([]uint8{uint8(branchIndex)})
+					mpt.db[returnNode.hash_node()] = returnNode
+					delete(mpt.db, nodeKey)
+					return true, returnNode.hash_node()
+				}
+			}
+		} else { // not found
+			return false, ""
+		}
+	} else if nodeType == 2 { //delete at leaf or extension node
+		var encodeValue = node.flag_value.encoded_prefix
+		var nodeValue = node.flag_value.value
+		var isLeaf = encodeValue[0] == uint8(2) || encodeValue[0] == uint8(3)
+		if isLeaf {
+			var nodePath = append(compact_decode(encodeValue), uint8(16)) //since it is the leaf node, add 16 back
+			var commonPath = getExtLeafCommonPath(nodePath, path)
+			var restPath = getRestPath(path, commonPath)
+			var restNibble = getRestNibble(nodePath, commonPath)
+			var cpLen = len(commonPath)
+			var rpLen = len(restPath)
+			var rnLen = len(restNibble)
+			if cpLen != 0 && rpLen == 0 && rnLen == 0 {
+				delete(mpt.db, nodeKey)
+				return true, ""
+			} else {
+				return false, ""
+			}
+		} else { // exstension node
+			var nodePath = compact_decode(encodeValue)
+			var commonPath = getExtLeafCommonPath(nodePath, path)
+			var restPath = getRestPath(path, commonPath)
+			var restNibble = getRestNibble(path, commonPath)
+			var cpLen = len(commonPath)
+			var rpLen = len(restPath)
+			var rnLen = len(restNibble)
+			if cpLen != 0 && rpLen == 0 && rnLen == 0 {
+				var isSuc bool
+				var nextKey string
+				isSuc, nextKey = mpt.deleteHelper(mpt.db[nodeValue], restPath)
+				if isSuc {
+					var nextReturnNode = mpt.db[nextKey]
+					var nextReturnNodeType = nextReturnNode.node_type
+					if nextReturnNodeType == 2 { //combine the return node and this extension node
+						var newNode Node
+						newNode.node_type = 2
+						var nextReturnNodeEncodeValue = nextReturnNode.flag_value.encoded_prefix
+						var newValue = append(compact_decode(encodeValue), compact_decode(nextReturnNodeEncodeValue)...)
+						if nextReturnNodeEncodeValue[0] == uint8(2) || nextReturnNodeEncodeValue[0] == uint8(3) {
+							newValue = append(newValue, uint8(16))
+						}
+						var newEncodeValue = compact_encode(newValue)
+						newNode.flag_value.encoded_prefix = newEncodeValue
+						newNode.flag_value.value = nextReturnNode.flag_value.value
+						mpt.db[newNode.hash_node()] = newNode
+						delete(mpt.db, nodeKey)
+						return true, newNode.hash_node()
+					} else { // just connect the next node
+						node.flag_value.value = nextKey
+						mpt.db[node.hash_node()] = node
+						delete(mpt.db, nodeKey)
+						return true, node.hash_node()
+					}
+				} else {
+					return false, ""
+				}
+			} else {
+				return false, ""
+			}
+		}
+	}
+	return false, ""
+}
+
 func getBranchCommonPath(branchValue [17]string, path []uint8) bool {
 	var n = path[0]
 	if branchValue[n] == "" {
@@ -260,9 +409,14 @@ func getBranchCommonPath(branchValue [17]string, path []uint8) bool {
 }
 
 func getExtLeafCommonPath(nodePath []uint8, insertPath []uint8) []uint8 {
-	//var commonPath []uint8 = {}
 	commonPath := []uint8{}
-	for i := range nodePath {
+	var loopTimes int
+	if len(nodePath) > len(insertPath) {
+		loopTimes = len(insertPath)
+	} else {
+		loopTimes = len(nodePath)
+	}
+	for i := 0; i < loopTimes; i++ {
 		if nodePath[i] == insertPath[i] {
 			commonPath = append(commonPath, nodePath[i])
 		}
@@ -276,11 +430,6 @@ func getRestPath(insertPath []uint8, commonPath []uint8) []uint8 {
 
 func getRestNibble(nodePath []uint8, commonPath []uint8) []uint8 {
 	return nodePath[len(commonPath):]
-}
-
-func (mpt *MerklePatriciaTrie) Delete(key string) (string, error) {
-	// TODO
-	return "", errors.New("path_not_found")
 }
 
 func compact_encode(hex_array []uint8) []uint8 {
@@ -403,6 +552,7 @@ func node_to_string(node Node) string {
 
 func (mpt *MerklePatriciaTrie) Initial() {
 	mpt.db = make(map[string]Node)
+	mpt.root = ""
 }
 
 func is_ext_node(encoded_arr []uint8) bool {

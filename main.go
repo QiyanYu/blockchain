@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-
-	"./p1"
 )
 
 func main() {
-	mpt := new(p1.MerklePatriciaTrie)
+	/*mpt := new(p1.MerklePatriciaTrie)
 	mpt.Insert("a", "apple")
-	mpt.Insert("ab", "apple")
-	fmt.Println("hello world!")
+	mpt.Insert("ab", "apple")*/
+
+	var a [17]string
+	fmt.Println(len(a))
 }
