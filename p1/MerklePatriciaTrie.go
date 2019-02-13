@@ -1,4 +1,5 @@
-package p1
+//package p1
+package main
 
 import (
 	"encoding/hex"
@@ -27,7 +28,6 @@ type MerklePatriciaTrie struct {
 }
 
 func (mpt *MerklePatriciaTrie) Get(key string) (string, error) {
-	// TODO
 	if key == "" {
 		return "", nil
 	}
@@ -56,35 +56,30 @@ func (mpt *MerklePatriciaTrie) getHelper(node Node, path []uint8) string {
 		}
 	} else if nodeType == 2 {
 		var encodeValue = node.flag_value.encoded_prefix
+		var decodeValue = compact_decode(encodeValue)
 		var nodeValue = node.flag_value.value
-		var isLeaf = encodeValue[0] == uint8(2) || encodeValue[0] == uint8(3)
+		var isLeaf = isLeafNode(encodeValue)
+		var nodePath []uint8
 		if isLeaf {
-			var nodePath = append(compact_decode(encodeValue), uint8(16)) //since it is the leaf node, add 16 back
-			var commonPath = getExtLeafCommonPath(nodePath, path)
-			var restPath = getRestPath(path, commonPath)
-			var restNibble = getRestNibble(nodePath, commonPath)
-			var cpLen = len(commonPath)
-			var rpLen = len(restPath)
-			var rnLen = len(restNibble)
-			if cpLen != 0 && rpLen == 0 && rnLen == 0 {
+			nodePath = append(decodeValue, uint8(16)) //since it is the leaf node, add 16 back
+		} else {
+			nodePath = decodeValue
+		}
+		var commonPath = getExtLeafCommonPath(nodePath, path)
+		var restPath = getRestPath(path, commonPath)
+		var restNibble = getRestNibble(nodePath, commonPath)
+		var cpLen = len(commonPath)
+		var rpLen = len(restPath)
+		var rnLen = len(restNibble)
+		if cpLen != 0 && rpLen == 0 && rnLen == 0 {
+			if isLeaf {
 				return nodeValue
 			} else {
-				return ""
-			}
-		} else { // exstension node
-			var nodePath = compact_decode(encodeValue)
-			var commonPath = getExtLeafCommonPath(nodePath, path)
-			var restPath = getRestPath(path, commonPath)
-			var restNibble = getRestNibble(path, commonPath)
-			var cpLen = len(commonPath)
-			var rpLen = len(restPath)
-			var rnLen = len(restNibble)
-			if cpLen != 0 && rpLen == 0 && rnLen == 0 {
 				var nextNode = mpt.db[nodeValue]
 				return mpt.getHelper(nextNode, restPath)
-			} else {
-				return ""
 			}
+		} else {
+			return ""
 		}
 	}
 	return ""
@@ -419,6 +414,8 @@ func getExtLeafCommonPath(nodePath []uint8, insertPath []uint8) []uint8 {
 	for i := 0; i < loopTimes; i++ {
 		if nodePath[i] == insertPath[i] {
 			commonPath = append(commonPath, nodePath[i])
+		} else {
+			return commonPath
 		}
 	}
 	return commonPath
@@ -474,6 +471,22 @@ func compact_decode(encoded_arr []uint8) []uint8 {
 	return hexArray
 }
 
+func isLeafNode(encodedArray []uint8) bool {
+	var hexArray []uint8
+	for i := 0; i < len(encodedArray); i++ {
+		n := encodedArray[i]
+		hexArray = append(hexArray, uint8(n/16))
+		hexArray = append(hexArray, uint8(n%16))
+	}
+	if hexArray[0] == 0 || hexArray[0] == 1 {
+		return false
+	}
+	if hexArray[0] == 2 || hexArray[0] == 3 {
+		return true
+	}
+	return false
+}
+
 func test_compact_encode() {
 	fmt.Println(reflect.DeepEqual(compact_decode(compact_encode([]uint8{1, 2, 3, 4, 5})), []uint8{1, 2, 3, 4, 5}))
 	fmt.Println(reflect.DeepEqual(compact_decode(compact_encode([]uint8{0, 1, 2, 3, 4, 5})), []uint8{0, 1, 2, 3, 4, 5}))
@@ -513,15 +526,22 @@ func getHexArray(key string) []uint8 {
 	return append(hexArray, 16)
 }
 
-/*
 func main() {
-	var bv [17]string
-	//bv[1] = "sjfks"
-	pa := []uint8{1, 2, 3, 4}
-	var a = getBranchCommonPath(bv, pa)
-	fmt.Println(a)
+	pa := []uint8{2, 7, 9}
+	pp := []uint8{2}
+	//fmt.Println(compact_encode(pa)[0] == 7)
 
-}*/
+	//var s [17]string
+	//s[2] = "adf"
+	//var ss uint8
+	//ss = 3
+	fmt.Println(getRestPath(pa, pp))
+	//fmt.Println(compact_decode(compact_encode(pa))[0] == 7)
+	//fmt.Println(compact_decode(pa))
+	//fmt.Println(getHexArray("do"))
+	//fmt.Println(compact_encode(getHexArray("do")))
+
+}
 
 func (node *Node) String() string {
 	str := "empty string"
