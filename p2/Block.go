@@ -84,8 +84,6 @@ func insertMpt(block *Block, mptValue map[string]interface{}) {
 //EncodeToJSON encodes a block instance into a JSON format string
 func (block *Block) EncodeToJSON() string {
 	insertedRecord := block.Value.InsertedRecord
-	//fmt.Println(insertedRecord)
-	//var cacheContent map[string]interface{}
 	fmt.Println(block.HeaderValue.Hash)
 	cacheContent := make(map[string]interface{})
 	cacheContent["height"] = block.HeaderValue.Height
