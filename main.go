@@ -1,13 +1,5 @@
 package main
 
-import (
-	"./p2"
-	"encoding/json"
-	"fmt"
-	"reflect"
-	"testing"
-)
-
 func main() {
 	// mpt := new(p1.MerklePatriciaTrie)
 	// mpt.Initial()
@@ -30,50 +22,5 @@ func main() {
 	// //jsonBlockChain := `[{"hash":"bafc28645bdbc85ff623c440598015e9541e77c27df954d3c2632793726b4bb4","height":2,"mpt":{"charles":"ge","hello":"world"},"parentHash":"2a96e78d6d8d7390501b0a61e7fde073008c1fe651747924f70ab4ba83acf6f1","size":1105,"timeStamp":1551130102},{"hash":"2a96e78d6d8d7390501b0a61e7fde073008c1fe651747924f70ab4ba83acf6f1","height":1,"mpt":{"charles":"ge","hello":"world"},"parentHash":"genesis","size":1105,"timeStamp":1551130102}]`
 	// bc.DecodeFromJSON(jsonBlockChain)
 	// fmt.Println(bc.EncodeToJSON())
-	TestBlockChainBasic(nil)
-}
 
-type BlockJson struct {
-	Height     int32             `json:"height"`
-	Timestamp  int64             `json:"timeStamp"`
-	Hash       string            `json:"hash"`
-	ParentHash string            `json:"parentHash"`
-	Size       int32             `json:"size"`
-	MPT        map[string]string `json:"mpt"`
-}
-
-
-func TestBlockChainBasic(t *testing.T) {
-	jsonBlockChain := "[{\"hash\": \"3ff3b4efe9177f705550231079c2459ba54a22d340a517e84ec5261a0d74ca48\", \"timeStamp\": 1234567890, \"height\": 1, \"parentHash\": \"genesis\", \"size\": 1174, \"mpt\": {\"hello\": \"world\", \"charles\": \"ge\"}}, {\"hash\": \"24cf2c336f02ccd526a03683b522bfca8c3c19aed8a1bed1bbc23c33cd8d1159\", \"timeStamp\": 1234567890, \"height\": 2, \"parentHash\": \"3ff3b4efe9177f705550231079c2459ba54a22d340a517e84ec5261a0d74ca48\", \"size\": 1231, \"mpt\": {\"hello\": \"world\", \"charles\": \"ge\"}}]"
-	bc := p2.BlockChain{}
-	bc.BlockChainInitial()
-	err := bc.BlockChainDecodeFromJSON(jsonBlockChain)
-	if err != nil {
-		fmt.Println(err)
-		t.Fail()
-	}
-	jsonNew, err := bc.BlockChainEncodeToJSON()
-	if err != nil {
-		fmt.Println(err)
-		t.Fail()
-	}
-	var realValue []BlockJson
-	var expectedValue []BlockJson
-	err = json.Unmarshal([]byte(jsonNew), &realValue)
-	if err != nil {
-		fmt.Println(err)
-		t.Fail()
-	}
-	err = json.Unmarshal([]byte(jsonBlockChain), &expectedValue)
-	if err != nil {
-		fmt.Println(err)
-		t.Fail()
-	}
-	if !reflect.DeepEqual(realValue, expectedValue) {
-		fmt.Println("=========Real=========")
-		fmt.Println(realValue)
-		fmt.Println("=========Expcected=========")
-		fmt.Println(expectedValue)
-		t.Fail()
-	}
 }

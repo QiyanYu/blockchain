@@ -5,7 +5,6 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"golang.org/x/crypto/sha3"
@@ -84,7 +83,7 @@ func insertMpt(block *Block, mptValue map[string]interface{}) {
 //EncodeToJSON encodes a block instance into a JSON format string
 func (block *Block) BlockEncodeToJSON() string {
 	insertedRecord := block.Value.InsertedRecord
-	fmt.Println(block.HeaderValue.Hash)
+	//fmt.Println(block.HeaderValue.Hash)
 	cacheContent := make(map[string]interface{})
 	cacheContent["height"] = block.HeaderValue.Height
 	cacheContent["timeStamp"] = block.HeaderValue.Timestamp
