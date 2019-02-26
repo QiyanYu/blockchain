@@ -29,7 +29,7 @@ type Block struct {
 }
 
 //Initial the block
-func (block *Block) Initial(height int32, parentHash string, value *p1.MerklePatriciaTrie) {
+func (block *Block) BlockInitial(height int32, parentHash string, value *p1.MerklePatriciaTrie) {
 	block.HeaderValue.Timestamp = int64(time.Now().Unix())
 	//block.HeaderValue.Timestamp = 1234567890
 	block.HeaderValue.Height = height
@@ -52,8 +52,8 @@ func getValueLen(value *p1.MerklePatriciaTrie) int32 {
 	return int32(len(buf.Bytes()))
 }
 
-//DecodeFromJSON takes a sting that represents the JSON value of a block as an input, decodes back to a block isntance
-func DecodeFromJSON(jsonString string) Block {
+//BlockDecodeFromJSON takes a sting that represents the JSON value of a block as an input, decodes back to a block isntance
+func BlockDecodeFromJSON(jsonString string) Block {
 	block := Block{}
 	var dat map[string]interface{}
 	if err := json.Unmarshal([]byte(jsonString), &dat); err != nil {
@@ -82,7 +82,7 @@ func insertMpt(block *Block, mptValue map[string]interface{}) {
 }
 
 //EncodeToJSON encodes a block instance into a JSON format string
-func (block *Block) EncodeToJSON() string {
+func (block *Block) BlockEncodeToJSON() string {
 	insertedRecord := block.Value.InsertedRecord
 	fmt.Println(block.HeaderValue.Hash)
 	cacheContent := make(map[string]interface{})

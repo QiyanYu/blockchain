@@ -2,14 +2,13 @@ package p2
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 )
 
 //BlockChain struct
 type BlockChain struct {
-	Chain  map[int32][]Block
-	Length int32
+	Chain  map[int32][]Block `json:"chain"`
+	Length int32             `json:"length"`
 }
 
 //Get takes a height as the argument, return the list of blocks
@@ -31,8 +30,8 @@ func (blockChain *BlockChain) Insert(block *Block) {
 	blockChain.Chain[height] = append(blockChain.Chain[height], *block)
 }
 
-//EncodeToJSON iterates over all the blocks, generate blocks JSONString
-func (blockChain *BlockChain) EncodeToJSON() string {
+//BlockChainEncodeToJSON iterates over all the blocks, generate blocks JSONString
+func (blockChain *BlockChain) BlockChainEncodeToJSON() (string, error) {
 	var sb strings.Builder
 	sb.WriteString("[")
 	blockIndex := 1
@@ -41,22 +40,34 @@ func (blockChain *BlockChain) EncodeToJSON() string {
 			sb.WriteString(",")
 		}
 		for i := range value {
-			blockJSONStr := value[i].EncodeToJSON()
+			blockJSONStr := value[i].BlockEncodeToJSON()
 			sb.WriteString(blockJSONStr)
 			blockIndex++
 		}
 	}
 	sb.WriteString("]")
-	return sb.String()
+	return sb.String(), nil
 }
 
-//DecodeFromJSON takes JSON string as input, get block instance back and insert into the blockchain
-func (blockChain *BlockChain) DecodeFromJSON(JSONString string) {
-	var blocks []Block
-	json.Unmarshal([]byte(JSONString), &blocks)
-	fmt.Println(blocks)
+//BlockChainDecodeFromJSON takes JSON string as input, get block instance back and insert into the blockchain
+func (blockChain *BlockChain) BlockChainDecodeFromJSON(JSONString string) error {
+	var arr []map[string]interface{}
+	err := json.Unmarshal([]byte(JSONString), &arr)
+	for i := range arr {
+		block := Block{}
+		block.HeaderValue.Height = int32(arr[i]["height"].(float64))
+		block.HeaderValue.Hash = arr[i]["hash"].(string)
+		block.HeaderValue.ParentHash = arr[i]["parentHash"].(string)
+		block.HeaderValue.Size = int32(arr[i]["size"].(float64))
+		block.HeaderValue.Timestamp = int64(arr[i]["timeStamp"].(float64))
+
+		mptValue := arr[i]["mpt"].(map[string]interface{})
+		insertMpt(&block, mptValue)
+		blockChain.Insert(&block)
+	}
+	return err
 }
 
-func (blockChain *BlockChain) Initial() {
+func (blockChain *BlockChain) BlockChainInitial() {
 	blockChain.Chain = make(map[int32][]Block)
 }
