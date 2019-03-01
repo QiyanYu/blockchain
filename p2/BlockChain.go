@@ -36,10 +36,10 @@ func (blockChain *BlockChain) BlockChainEncodeToJSON() (string, error) {
 	sb.WriteString("[")
 	blockIndex := 1
 	for _, value := range blockChain.Chain {
-		if blockIndex != 1 {
-			sb.WriteString(",")
-		}
 		for i := range value {
+			if blockIndex != 1 {
+				sb.WriteString(",")
+			}
 			blockJSONStr := value[i].BlockEncodeToJSON()
 			sb.WriteString(blockJSONStr)
 			blockIndex++

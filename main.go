@@ -3,6 +3,7 @@ package main
 func main() {
 	// mpt := new(p1.MerklePatriciaTrie)
 	// mpt.Initial()
+
 	// mpt.Insert("hello", "world")
 	// mpt.Insert("charles", "ge")
 	// b1 := new(p2.Block)
