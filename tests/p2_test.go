@@ -24,6 +24,7 @@ func TestBlockChainBasic(t *testing.T) {
 	bc.BlockChainInitial()
 	err := bc.BlockChainDecodeFromJSON(jsonBlockChain)
 	if err != nil {
+		
 		fmt.Println(err)
 		t.Fail()
 	}
