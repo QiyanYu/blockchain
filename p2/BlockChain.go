@@ -13,6 +13,9 @@ type BlockChain struct {
 
 //Get takes a height as the argument, return the list of blocks
 func (blockChain *BlockChain) Get(height int32) []Block {
+	if len(blockChain.Chain[height]) == 0 {
+		return nil
+	}
 	return blockChain.Chain[height]
 }
 

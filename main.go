@@ -1,5 +1,11 @@
 package main
 
+import (
+	"fmt"
+
+	"./p2"
+)
+
 func main() {
 	// mpt := new(p1.MerklePatriciaTrie)
 	// mpt.Initial()
@@ -12,6 +18,7 @@ func main() {
 	// b2.Initial(2, b1.HeaderValue.Hash, mpt)
 	// bc := new(p2.BlockChain)
 	// bc.Initial()
+	// fmt.Println(bc.Get(0))
 	// // bc.Insert(b1)
 	// // bc.Insert(b2)
 	// // fmt.Println(b1.EncodeToJSON())

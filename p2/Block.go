@@ -15,7 +15,7 @@ import (
 //Header  block header struct
 type Header struct {
 	Height     int32  `json:"height"`
-	Timestamp  int64  `json:"timeStampe"`
+	Timestamp  int64  `json:"timeStamp"`
 	Hash       string `json:"hash"`
 	ParentHash string `json:"parentHash"`
 	Size       int32  `json:"size"`
