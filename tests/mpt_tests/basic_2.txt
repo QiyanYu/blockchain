@@ -1,1 +1,0 @@
-Hash0: Leaf<[6, 1], value="apple">

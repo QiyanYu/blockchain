@@ -1,7 +1,5 @@
 package p1
 
-//package main
-
 import (
 	"encoding/hex"
 	"errors"
@@ -381,7 +379,7 @@ func (mpt *MerklePatriciaTrie) deleteHelper(nodeHash string, path []uint8) (bool
 			} else {
 				return false, ""
 			}
-		} else { // exstension node
+		} else { // extension node
 			var nodePath = compact_decode(encodeValue)
 			var commonPath = getExtLeafCommonPath(nodePath, path)
 			var restPath = getRestPath(path, commonPath)
